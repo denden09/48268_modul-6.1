@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2023 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.example.inventory.ui.item
 
 import androidx.compose.runtime.getValue
@@ -22,11 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.inventory.data.Item
 import java.text.NumberFormat
+import com.example.inventory.data.ItemsRepository
 
 /**
  * ViewModel to validate and insert items in the Room database.
  */
-class ItemEntryViewModel : ViewModel() {
+class ItemEntryViewModel(private val itemsRepository: ItemsRepository) : ViewModel() {
 
     /**
      * Holds current item ui state
@@ -35,8 +20,7 @@ class ItemEntryViewModel : ViewModel() {
         private set
 
     /**
-     * Updates the [itemUiState] with the value provided in the argument. This method also triggers
-     * a validation for input values.
+     * Updates the [itemUiState] with the value provided in the argument.
      */
     fun updateUiState(itemDetails: ItemDetails) {
         itemUiState =
@@ -46,6 +30,15 @@ class ItemEntryViewModel : ViewModel() {
     private fun validateInput(uiState: ItemDetails = itemUiState.itemDetails): Boolean {
         return with(uiState) {
             name.isNotBlank() && price.isNotBlank() && quantity.isNotBlank()
+        }
+    }
+
+    /**
+     * Save item to the database if the entry is valid.
+     */
+    suspend fun saveItem() {
+        if (validateInput()) {
+            itemsRepository.insertItem(itemUiState.itemDetails.toItem())
         }
     }
 }
@@ -66,9 +59,7 @@ data class ItemDetails(
 )
 
 /**
- * Extension function to convert [ItemDetails] to [Item]. If the value of [ItemDetails.price] is
- * not a valid [Double], then the price will be set to 0.0. Similarly if the value of
- * [ItemDetails.quantity] is not a valid [Int], then the quantity will be set to 0
+ * Extension function to convert [ItemDetails] to [Item].
  */
 fun ItemDetails.toItem(): Item = Item(
     id = id,
@@ -82,7 +73,7 @@ fun Item.formatedPrice(): String {
 }
 
 /**
- * Extension function to convert [Item] to [ItemUiState]
+ * Extension function to convert [Item] to [ItemUiState].
  */
 fun Item.toItemUiState(isEntryValid: Boolean = false): ItemUiState = ItemUiState(
     itemDetails = this.toItemDetails(),
@@ -90,7 +81,7 @@ fun Item.toItemUiState(isEntryValid: Boolean = false): ItemUiState = ItemUiState
 )
 
 /**
- * Extension function to convert [Item] to [ItemDetails]
+ * Extension function to convert [Item] to [ItemDetails].
  */
 fun Item.toItemDetails(): ItemDetails = ItemDetails(
     id = id,
